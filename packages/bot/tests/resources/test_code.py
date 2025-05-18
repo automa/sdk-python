@@ -308,7 +308,7 @@ def test_propose_invalid_token(fixture_tarfile, code_resource):
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
                 "token": "ghijkl",
-                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
+                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content",
             },
         },
         headers={
@@ -344,7 +344,7 @@ async def test_propose_async_invalid_token(fixture_tarfile, async_code_resource)
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
                 "token": "ghijkl",
-                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
+                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content",
             },
         },
         headers={
@@ -377,7 +377,7 @@ def test_propose(fixture_tarfile, code_resource):
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
                 "token": "ghijkl",
-                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
+                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content",
             },
         },
         headers={
@@ -411,7 +411,7 @@ async def test_propose_async(fixture_tarfile, async_code_resource):
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
                 "token": "ghijkl",
-                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
+                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content",
             },
         },
         headers={

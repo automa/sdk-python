@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-import subprocess
 import tarfile
 from asyncio import to_thread
 from os import makedirs, remove
 from pathlib import Path
 from shutil import rmtree
 from typing import NotRequired, TypedDict
+
+from git import Repo
 
 from .._resource import AsyncAPIResource, SyncAPIResource
 from .._types import RequestOptions
@@ -16,6 +17,11 @@ __all__ = [
     "CodeResource",
     "AsyncCodeResource",
 ]
+
+
+def get_diff(folder: str) -> str:
+    repo = Repo(folder)
+    return repo.git.diff()
 
 
 class BaseCodeResource:
@@ -97,11 +103,7 @@ class CodeResource(SyncAPIResource, BaseCodeResource):
         if not token:
             raise ValueError("Failed to read the stored proposal token")
 
-        # TODO: Use programmatic git instead of system git
-        result = subprocess.run(
-            ["git", "diff"], cwd=folder, text=True, capture_output=True, check=True
-        )
-        stdout = result.stdout
+        diff = get_diff(folder)
 
         return self._client.post(
             "/code/propose",
@@ -110,7 +112,7 @@ class CodeResource(SyncAPIResource, BaseCodeResource):
                 "proposal": {
                     **body.get("proposal", {}),
                     "token": token,
-                    "diff": stdout,
+                    "diff": diff,
                 },
             },
             options=options,
@@ -166,16 +168,7 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
         if not token:
             raise ValueError("Failed to read the stored proposal token")
 
-        # TODO: Use programmatic git instead of system git
-        result = await to_thread(
-            subprocess.run,
-            ["git", "diff"],
-            cwd=folder,
-            text=True,
-            capture_output=True,
-            check=True,
-        )
-        stdout = result.stdout
+        diff = await to_thread(get_diff, folder)
 
         return await self._client.post(
             "/code/propose",
@@ -184,7 +177,7 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
                 "proposal": {
                     **body.get("proposal", {}),
                     "token": token,
-                    "diff": stdout,
+                    "diff": diff,
                 },
             },
             options=options,
