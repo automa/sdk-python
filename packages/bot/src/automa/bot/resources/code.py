@@ -21,7 +21,7 @@ __all__ = [
 
 def get_diff(folder: str) -> str:
     repo = Repo(folder)
-    return repo.git.diff()
+    return repo.git.diff(strip_newline_in_stdout=False)
 
 
 class BaseCodeResource:
