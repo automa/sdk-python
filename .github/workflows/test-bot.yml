@@ -23,11 +23,11 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
-          version: 0.6
+          version: 0.7
       - name: Install dependencies
         run: uv sync --frozen
       - name: Run tests
-        run: uv run --frozen pytest --cov=src --cov-report=xml
+        run: PYTHON_ENV=test uv run --frozen pytest --cov=src --cov-report=xml
         working-directory: packages/bot
       - name: Upload coverage
         uses: codecov/codecov-action@v4
