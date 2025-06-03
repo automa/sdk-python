@@ -38,9 +38,9 @@ class CodeFolder:
     def __init__(self, path: str):
         self.path = path
 
-    def add(self, path: str | list[str]) -> None:
+    def add(self, paths: str | list[str]) -> None:
         """Add new files to git repository"""
-        paths = path if isinstance(path, list) else [path]
+        paths = paths if isinstance(paths, list) else [paths]
         paths = [join(self.path, p) for p in paths if p]
 
         subprocess.run(
