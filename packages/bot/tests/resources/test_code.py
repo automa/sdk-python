@@ -185,7 +185,7 @@ def test_download(fixture_tarfile, code_resource):
     created_folder = code_resource.download({"task": {"id": 28, "token": "abcdef"}})
 
     # Returns path to downloaded code
-    assert created_folder == folder
+    assert created_folder.path == folder
 
     # Hits the API
     code_resource._client._client.stream.assert_called_once_with(
@@ -208,6 +208,8 @@ def test_download(fixture_tarfile, code_resource):
     # Saves proposal token
     with open(proposal_token_file, "r") as f:
         assert f.read() == "ghijkl"
+
+    return created_folder
 
 
 @pytest.mark.asyncio
@@ -233,7 +235,7 @@ async def test_download_async(fixture_tarfile, async_code_resource):
     )
 
     # Returns path to downloaded code
-    assert created_folder == folder
+    assert created_folder.path == folder
 
     # Hits the API
     async_code_resource._client._client.stream.assert_called_once_with(
@@ -412,6 +414,41 @@ async def test_propose_async(fixture_tarfile, async_code_resource):
             "proposal": {
                 "token": "ghijkl",
                 "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
+            },
+        },
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+def test_propose_with_added_files(fixture_tarfile, code_resource):
+    code_folder = test_download(fixture_tarfile, code_resource)
+
+    with open(f"{code_folder.path}/NEW.md", "w") as f:
+        f.write("Content\n")
+
+    code_folder.add("NEW.md")
+
+    # Mock client response
+    response_mock = MagicMock()
+    response_mock.status_code = 204
+    response_mock.is_error = False
+
+    code_resource._client._client.request.return_value = response_mock
+
+    code_resource.propose({"task": {"id": 28, "token": "abcdef"}})
+
+    # Hits the API
+    code_resource._client._client.request.assert_called_once_with(
+        "post",
+        "/code/propose",
+        json={
+            "task": {"id": 28, "token": "abcdef"},
+            "proposal": {
+                "token": "ghijkl",
+                "diff": "diff --git a/NEW.md b/NEW.md\nnew file mode 100644\nindex 0000000..39c9f36\n--- /dev/null\n+++ b/NEW.md\n@@ -0,0 +1 @@\n+Content\n",
             },
         },
         headers={
