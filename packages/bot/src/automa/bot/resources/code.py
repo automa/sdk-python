@@ -1,13 +1,13 @@
 from __future__ import annotations
 
+import subprocess
 import tarfile
 from asyncio import to_thread
 from os import makedirs, remove
+from os.path import join
 from pathlib import Path
 from shutil import rmtree
 from typing import NotRequired, TypedDict
-
-from git import Repo
 
 from .._resource import AsyncAPIResource, SyncAPIResource
 from .._types import RequestOptions
@@ -16,12 +16,38 @@ from .shared.task import Task, TaskWithToken
 __all__ = [
     "CodeResource",
     "AsyncCodeResource",
+    "CodeFolder",
 ]
 
 
-def get_diff(folder: str) -> str:
-    repo = Repo(folder)
-    return repo.git.diff(strip_newline_in_stdout=False)
+# TODO: Use programmatic git instead of git command
+def get_diff(path: str) -> str:
+    """Get the diff for the given git repository path."""
+    result = subprocess.run(
+        ["git", "diff"],
+        cwd=path,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+
+    return result.stdout
+
+
+class CodeFolder:
+    def __init__(self, path: str):
+        self.path = path
+
+    def add(self, path: str | list[str]) -> None:
+        """Add new files to git repository"""
+        paths = path if isinstance(path, list) else [path]
+        paths = [join(self.path, p) for p in paths if p]
+
+        subprocess.run(
+            ["git", "add", "-N", *paths],
+            cwd=self.path,
+            check=True,
+        )
 
 
 class BaseCodeResource:
@@ -63,10 +89,10 @@ class CodeResource(SyncAPIResource, BaseCodeResource):
 
     def download(
         self, body: CodeDownloadParams, *, options: RequestOptions = {}
-    ) -> str:
+    ) -> CodeFolder:
         token = None
-        folder = self._path(body["task"])
-        archive_path = f"{folder}.tar.gz"
+        path = self._path(body["task"])
+        archive_path = f"{path}.tar.gz"
 
         with self._client.stream(
             "post",
@@ -82,28 +108,28 @@ class CodeResource(SyncAPIResource, BaseCodeResource):
         ) as response:
             token = response.headers["x-automa-proposal-token"]
 
-            rmtree(folder, ignore_errors=True)
-            makedirs(folder, exist_ok=True)
+            rmtree(path, ignore_errors=True)
+            makedirs(path, exist_ok=True)
 
             with open(archive_path, "wb") as archive:
                 for chunk in response.iter_bytes(chunk_size=8192):
                     archive.write(chunk)
 
-        self._extract_download(folder)
+        self._extract_download(path)
 
         # Save the proposal token for later use
-        self._write_token(folder, token)
+        self._write_token(path, token)
 
-        return folder
+        return CodeFolder(path)
 
     def propose(self, body: CodeProposeParams, *, options: RequestOptions = {}):
-        folder = self._path(body["task"])
-        token = self._read_token(folder)
+        path = self._path(body["task"])
+        token = self._read_token(path)
 
         if not token:
             raise ValueError("Failed to read the stored proposal token")
 
-        diff = get_diff(folder)
+        diff = get_diff(path)
 
         return self._client.post(
             "/code/propose",
@@ -128,10 +154,10 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
 
     async def download(
         self, body: CodeDownloadParams, *, options: RequestOptions = {}
-    ) -> str:
+    ) -> CodeFolder:
         token = None
-        folder = self._path(body["task"])
-        archive_path = f"{folder}.tar.gz"
+        path = self._path(body["task"])
+        archive_path = f"{path}.tar.gz"
 
         async with self._client.stream(
             "post",
@@ -147,28 +173,28 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
         ) as response:
             token = response.headers["x-automa-proposal-token"]
 
-            await to_thread(rmtree, folder, ignore_errors=True)
-            await to_thread(makedirs, folder, exist_ok=True)
+            await to_thread(rmtree, path, ignore_errors=True)
+            await to_thread(makedirs, path, exist_ok=True)
 
             with open(archive_path, "wb") as archive:
                 async for chunk in response.aiter_bytes(chunk_size=8192):
                     await to_thread(archive.write, chunk)
 
-        await to_thread(self._extract_download, folder)
+        await to_thread(self._extract_download, path)
 
         # Save the proposal token for later use
-        await to_thread(self._write_token, folder, token)
+        await to_thread(self._write_token, path, token)
 
-        return folder
+        return CodeFolder(path)
 
     async def propose(self, body: CodeProposeParams, *, options: RequestOptions = {}):
-        folder = self._path(body["task"])
-        token = await to_thread(self._read_token, folder)
+        path = self._path(body["task"])
+        token = await to_thread(self._read_token, path)
 
         if not token:
             raise ValueError("Failed to read the stored proposal token")
 
-        diff = await to_thread(get_diff, folder)
+        diff = await to_thread(get_diff, path)
 
         return await self._client.post(
             "/code/propose",

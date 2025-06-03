@@ -1,11 +1,12 @@
 from ._client import AsyncAutoma, Automa
-from .resources import AsyncCodeResource, CodeResource
+from .resources import AsyncCodeResource, CodeFolder, CodeResource
 
 __all__ = [
     "Automa",
     "AsyncAutoma",
     "AsyncCodeResource",
     "CodeResource",
+    "CodeFolder",
 ]
 
 # Update the __module__ attribute for exported symbols so that
