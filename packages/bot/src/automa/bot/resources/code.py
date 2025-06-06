@@ -237,4 +237,5 @@ class CodeProposeParams(CodeDownloadParams):
     proposal: NotRequired[Proposal]
 
     class Proposal(TypedDict, total=False):
-        message: str
+        title: NotRequired[str]
+        body: NotRequired[str]
