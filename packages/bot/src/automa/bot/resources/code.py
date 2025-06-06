@@ -11,7 +11,6 @@ from typing import NotRequired, TypedDict
 
 from .._resource import AsyncAPIResource, SyncAPIResource
 from .._types import RequestOptions
-from .shared.task import Task, TaskWithToken
 
 __all__ = [
     "CodeResource",
@@ -45,6 +44,14 @@ class CodeFolder:
 
         subprocess.run(
             ["git", "add", "-N", *paths],
+            cwd=self.path,
+            check=True,
+        )
+
+    def add_all(self) -> None:
+        """Add all files to git repository"""
+        subprocess.run(
+            ["git", "add", "-N", "."],
             cwd=self.path,
             check=True,
         )
@@ -210,6 +217,14 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
         )
 
 
+class Task(TypedDict):
+    id: int
+
+
+class TaskWithToken(Task):
+    token: str
+
+
 class CodeCleanupParams(TypedDict):
     task: Task
 
@@ -222,4 +237,5 @@ class CodeProposeParams(CodeDownloadParams):
     proposal: NotRequired[Proposal]
 
     class Proposal(TypedDict, total=False):
-        message: str
+        title: NotRequired[str]
+        body: NotRequired[str]
