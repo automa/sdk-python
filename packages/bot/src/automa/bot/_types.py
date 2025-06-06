@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Any, Literal, Mapping, TypedDict, Union
+from enum import Enum
+from typing import Any, Dict, Literal, Mapping, TypedDict, Union
 
 from httpx._types import QueryParamTypes, RequestExtensions
 
@@ -35,3 +36,44 @@ class RequestOptions(TypedDict, total=False):
     params: QueryParamTypes | None
     extensions: RequestExtensions | None
     stream: bool | None
+
+
+class TaskItem(TypedDict):
+    id: int
+    type: Literal["origin", "message", "repo", "bot", "proposal", "activity"]
+    data: Dict[str, Any]
+
+
+class Task(TypedDict):
+    id: int
+    token: str
+    title: str
+    items: list[TaskItem]
+
+
+class Repo(TypedDict):
+    id: int
+    name: str
+    is_private: bool
+
+
+class Org(TypedDict):
+    id: int
+    name: str
+    provider_type: Literal["github", "gitlab"]
+
+
+class WebhookEventType(Enum):
+    TaskCreated = "task.created"
+
+
+class WebhookPayload(TypedDict):
+    id: str
+    timestamp: str
+    type: WebhookEventType
+    data: WebhookPayloadData
+
+    class WebhookPayloadData(TypedDict):
+        task: Task
+        repo: Repo
+        org: Org

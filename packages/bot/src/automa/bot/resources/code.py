@@ -11,7 +11,6 @@ from typing import NotRequired, TypedDict
 
 from .._resource import AsyncAPIResource, SyncAPIResource
 from .._types import RequestOptions
-from .shared.task import Task, TaskWithToken
 
 __all__ = [
     "CodeResource",
@@ -208,6 +207,14 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
             },
             options=options,
         )
+
+
+class Task(TypedDict):
+    id: int
+
+
+class TaskWithToken(Task):
+    token: str
 
 
 class CodeCleanupParams(TypedDict):

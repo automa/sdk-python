@@ -1,4 +1,5 @@
 from ._client import AsyncAutoma, Automa
+from ._types import Org, Repo, Task, TaskItem, WebhookEventType, WebhookPayload
 from .resources import AsyncCodeResource, CodeFolder, CodeResource
 
 __all__ = [
@@ -7,6 +8,12 @@ __all__ = [
     "AsyncCodeResource",
     "CodeResource",
     "CodeFolder",
+    "TaskItem",
+    "Task",
+    "Repo",
+    "Org",
+    "WebhookEventType",
+    "WebhookPayload",
 ]
 
 # Update the __module__ attribute for exported symbols so that
