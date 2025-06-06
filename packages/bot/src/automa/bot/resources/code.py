@@ -48,6 +48,14 @@ class CodeFolder:
             check=True,
         )
 
+    def add_all(self) -> None:
+        """Add all files to git repository"""
+        subprocess.run(
+            ["git", "add", "-N", "."],
+            cwd=self.path,
+            check=True,
+        )
+
 
 class BaseCodeResource:
     def _path(self, task: Task) -> str:
