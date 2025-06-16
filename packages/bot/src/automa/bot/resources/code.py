@@ -235,7 +235,12 @@ class CodeDownloadParams(TypedDict):
 
 class CodeProposeParams(CodeDownloadParams):
     proposal: NotRequired[Proposal]
+    metadata: NotRequired[Metadata]
 
-    class Proposal(TypedDict, total=False):
+    class Proposal(TypedDict):
         title: NotRequired[str]
         body: NotRequired[str]
+
+    # TODO: Add `extra_items=Any`
+    class Metadata(TypedDict):
+        cost: NotRequired[float]

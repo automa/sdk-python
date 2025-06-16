@@ -491,3 +491,82 @@ def test_propose_with_added_files_using_add_all(fixture_tarfile, code_resource):
             "Content-Type": "application/json",
         },
     )
+
+
+def test_propose_with_proposal_properties(fixture_tarfile, code_resource):
+    test_download(fixture_tarfile, code_resource)
+
+    with open(f"{folder}/README.md", "w") as f:
+        f.write("Content\n")
+
+    # Mock client response
+    response_mock = MagicMock()
+    response_mock.status_code = 204
+    response_mock.is_error = False
+
+    code_resource._client._client.request.return_value = response_mock
+
+    code_resource.propose(
+        {
+            "proposal": {"title": "PR title", "body": "PR body"},
+            "task": {"id": 28, "token": "abcdef"},
+        }
+    )
+
+    # Hits the API
+    code_resource._client._client.request.assert_called_once_with(
+        "post",
+        "/code/propose",
+        json={
+            "task": {"id": 28, "token": "abcdef"},
+            "proposal": {
+                "title": "PR title",
+                "body": "PR body",
+                "token": "ghijkl",
+                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
+            },
+        },
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+def test_propose_with_metadata(fixture_tarfile, code_resource):
+    test_download(fixture_tarfile, code_resource)
+
+    with open(f"{folder}/README.md", "w") as f:
+        f.write("Content\n")
+
+    # Mock client response
+    response_mock = MagicMock()
+    response_mock.status_code = 204
+    response_mock.is_error = False
+
+    code_resource._client._client.request.return_value = response_mock
+
+    code_resource.propose(
+        {
+            "task": {"id": 28, "token": "abcdef"},
+            "metadata": {"cost": 0.1, "random": "yes"},
+        }
+    )
+
+    # Hits the API
+    code_resource._client._client.request.assert_called_once_with(
+        "post",
+        "/code/propose",
+        json={
+            "task": {"id": 28, "token": "abcdef"},
+            "proposal": {
+                "token": "ghijkl",
+                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
+            },
+            "metadata": {"cost": 0.1, "random": "yes"},
+        },
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+    )
