@@ -2,7 +2,7 @@
 name    = "automa-bot"
 version = "0.2.2"
 
-authors         = [{ name = "Automa, Inc.", email = "engineering@automa.app" }]
+authors         = [{ name = "Sunkara, Inc.", email = "engineering@automa.app" }]
 description     = "Bot helpers for Automa"
 license         = "MIT"
 readme          = "README.md"
