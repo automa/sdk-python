@@ -16,6 +16,9 @@ __all__ = [
     "CodeResource",
     "AsyncCodeResource",
     "CodeFolder",
+    "CodeCleanupParams",
+    "CodeDownloadParams",
+    "CodeProposeParams",
 ]
 
 
@@ -241,6 +244,6 @@ class CodeProposeParams(CodeDownloadParams):
         title: NotRequired[str]
         body: NotRequired[str]
 
-    # TODO: Add `extra_items=Any`
+    # TODO: Add `extra_items=Any` (py 3.15)
     class Metadata(TypedDict):
         cost: NotRequired[float]

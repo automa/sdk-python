@@ -1,6 +1,6 @@
 [project]
 name    = "automa-bot"
-version = "0.2.2"
+version = "0.2.3"
 
 authors         = [{ name = "Sunkara, Inc.", email = "engineering@automa.app" }]
 description     = "Bot helpers for Automa"

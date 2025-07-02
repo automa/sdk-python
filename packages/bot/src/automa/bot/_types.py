@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Dict, Literal, Mapping, TypedDict, Union
+from typing import Any, Dict, Literal, Mapping, NotRequired, TypedDict, Union
 
 from httpx._types import QueryParamTypes, RequestExtensions
 
@@ -38,16 +38,41 @@ class RequestOptions(TypedDict, total=False):
     stream: bool | None
 
 
-class TaskItem(TypedDict):
+class ProposalTaskItem(TypedDict):
     id: int
-    type: Literal["origin", "message", "repo", "bot", "proposal", "activity"]
+    type: Literal["proposal"]
+    data: ProposalTaskItemData
+    bot_id: int
+    repo_id: int
+
+    class ProposalTaskItemData(TypedDict):
+        prId: int
+        prNumber: int
+        prTitle: str
+        prHead: str
+        prBase: str
+        prState: Literal["open", "closed"]
+        prMerged: bool
+
+
+class GenericTaskItem(TypedDict):
+    id: int
+    type: Literal["origin", "message", "repo", "bot", "activity"]
     data: Dict[str, Any]
+    bot_id: NotRequired[int]
+    repo_id: NotRequired[int]
+
+
+TaskItem = Union[ProposalTaskItem, GenericTaskItem]
 
 
 class Task(TypedDict):
     id: int
-    token: str
     title: str
+
+
+class TaskForCode(Task):
+    token: str
     items: list[TaskItem]
 
 
@@ -64,16 +89,50 @@ class Org(TypedDict):
 
 
 class WebhookEventType(Enum):
-    TaskCreated = "task.created"
+    TASK_CREATED = "task.created"
+    PROPOSAL_ACCEPTED = "proposal.accepted"
+    PROPOSAL_REJECTED = "proposal.rejected"
 
 
-class WebhookPayload(TypedDict):
+class WebhookTaskCreatedData(TypedDict):
+    task: TaskForCode
+    repo: Repo
+    org: Org
+
+
+class WebhookProposalClosedData(TypedDict):
+    proposal: ProposalTaskItem
+    task: Task
+    org: Org
+
+
+WebhookProposalAcceptedData = WebhookProposalClosedData
+WebhookProposalRejectedData = WebhookProposalClosedData
+
+
+class WebhookTaskCreatedPayload(TypedDict):
     id: str
     timestamp: str
-    type: WebhookEventType
-    data: WebhookPayloadData
+    type: Literal[WebhookEventType.TASK_CREATED]
+    data: WebhookTaskCreatedData
 
-    class WebhookPayloadData(TypedDict):
-        task: Task
-        repo: Repo
-        org: Org
+
+class WebhookProposalAcceptedPayload(TypedDict):
+    id: str
+    timestamp: str
+    type: Literal[WebhookEventType.PROPOSAL_ACCEPTED]
+    data: WebhookProposalAcceptedData
+
+
+class WebhookProposalRejectedPayload(TypedDict):
+    id: str
+    timestamp: str
+    type: Literal[WebhookEventType.PROPOSAL_REJECTED]
+    data: WebhookProposalRejectedData
+
+
+WebhookPayload = Union[
+    WebhookTaskCreatedPayload,
+    WebhookProposalAcceptedPayload,
+    WebhookProposalRejectedPayload,
+]

@@ -1,6 +1,29 @@
 from ._client import AsyncAutoma, Automa
-from ._types import Org, Repo, Task, TaskItem, WebhookEventType, WebhookPayload
-from .resources import AsyncCodeResource, CodeFolder, CodeResource
+from ._types import (
+    GenericTaskItem,
+    Org,
+    ProposalTaskItem,
+    Repo,
+    Task,
+    TaskForCode,
+    TaskItem,
+    WebhookEventType,
+    WebhookPayload,
+    WebhookProposalAcceptedData,
+    WebhookProposalAcceptedPayload,
+    WebhookProposalRejectedData,
+    WebhookProposalRejectedPayload,
+    WebhookTaskCreatedData,
+    WebhookTaskCreatedPayload,
+)
+from .resources import (
+    AsyncCodeResource,
+    CodeCleanupParams,
+    CodeDownloadParams,
+    CodeFolder,
+    CodeProposeParams,
+    CodeResource,
+)
 
 __all__ = [
     "Automa",
@@ -8,11 +31,23 @@ __all__ = [
     "AsyncCodeResource",
     "CodeResource",
     "CodeFolder",
+    "CodeCleanupParams",
+    "CodeDownloadParams",
+    "CodeProposeParams",
+    "ProposalTaskItem",
+    "GenericTaskItem",
     "TaskItem",
     "Task",
+    "TaskForCode",
     "Repo",
     "Org",
     "WebhookEventType",
+    "WebhookTaskCreatedData",
+    "WebhookTaskCreatedPayload",
+    "WebhookProposalAcceptedData",
+    "WebhookProposalAcceptedPayload",
+    "WebhookProposalRejectedData",
+    "WebhookProposalRejectedPayload",
     "WebhookPayload",
 ]
 
