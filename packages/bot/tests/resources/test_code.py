@@ -11,6 +11,7 @@ from src.automa.bot.resources.code import AsyncCodeResource, CodeResource
 
 folder = "/tmp/automa/tasks/28"
 proposal_token_file = f"{folder}/.git/automa_proposal_token"
+proposal_base_commit_file = f"{folder}/.git/automa_proposal_base_commit"
 
 
 @pytest.fixture
@@ -42,6 +43,14 @@ def async_code_resource():
 
 
 @pytest.fixture
+def fixture_git():
+    tests_folder = Path(__file__).parent.parent
+    git_path = tests_folder / "fixtures" / "download_git"
+
+    yield git_path
+
+
+@pytest.fixture
 def fixture_tarfile():
     tests_folder = Path(__file__).parent.parent
     fixture = tests_folder / "fixtures" / "download"
@@ -65,13 +74,26 @@ def fixture_tarfile():
     rmtree(fixture / ".git", ignore_errors=True)
 
 
-def test_cleanup(code_resource):
+def test_cleanup_proxy(code_resource):
     makedirs(folder, exist_ok=True)
     with open(f"{folder}.tar.gz", "w") as f:
         f.write("ghijkl")
 
     assert path.exists(folder)
     assert path.exists(f"{folder}.tar.gz")
+
+    # Call cleanup
+    code_resource.cleanup({"task": {"id": 28}})
+
+    assert not path.exists(folder)
+    assert not path.exists(f"{folder}.tar.gz")
+
+
+def test_cleanup_direct(code_resource):
+    makedirs(folder, exist_ok=True)
+
+    assert path.exists(folder)
+    assert not path.exists(f"{folder}.tar.gz")
 
     # Call cleanup
     code_resource.cleanup({"task": {"id": 28}})
@@ -122,7 +144,7 @@ def test_download_invalid_token(code_resource):
         "/code/download",
         json={"task": {"id": 28, "token": "invalid"}},
         headers={
-            "Accept": "application/gzip",
+            "Accept": "application/json",
             "Content-Type": "application/json",
         },
     )
@@ -159,7 +181,7 @@ async def test_download_async_invalid_token(async_code_resource):
         "/code/download",
         json={"task": {"id": 28, "token": "invalid"}},
         headers={
-            "Accept": "application/gzip",
+            "Accept": "application/json",
             "Content-Type": "application/json",
         },
     )
@@ -168,12 +190,87 @@ async def test_download_async_invalid_token(async_code_resource):
     assert not path.exists(folder)
 
 
-def test_download(fixture_tarfile, code_resource):
+def test_download_missing_content_type(code_resource):
     # Mock client response
     response_mock = MagicMock()
     response_mock.status_code = 200
     response_mock.is_error = False
-    response_mock.headers = {"x-automa-proposal-token": "ghijkl"}
+    response_mock.headers = {}
+    response_mock.iter_bytes.return_value = iter([b""])
+
+    code_resource._client._client.stream.return_value.__enter__.return_value = (
+        response_mock
+    )
+
+    # Call download
+    with pytest.raises(
+        Exception,
+        match="Unexpected Content-Type:  while downloading code.",
+    ):
+        code_resource.download({"task": {"id": 28, "token": "abcdef"}})
+
+    # Hits the API
+    code_resource._client._client.stream.assert_called_once_with(
+        "post",
+        "/code/download",
+        json={"task": {"id": 28, "token": "abcdef"}},
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+    )
+
+    # Does not download code
+    assert not path.exists(folder)
+
+
+@pytest.mark.asyncio
+async def test_download_missing_content_type_async(async_code_resource):
+    # Mock client response
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.is_error = False
+    response_mock.headers = {}
+
+    response_byte_reader = AsyncMock()
+    response_byte_reader.__aiter__.return_value = iter([b""])
+    response_mock.aiter_bytes.return_value = response_byte_reader
+
+    async_code_resource._client._client.stream.return_value.__aenter__.return_value = (
+        response_mock
+    )
+
+    # Call download
+    with pytest.raises(
+        Exception,
+        match="Unexpected Content-Type:  while downloading code.",
+    ):
+        await async_code_resource.download({"task": {"id": 28, "token": "abcdef"}})
+
+    # Hits the API
+    async_code_resource._client._client.stream.assert_called_once_with(
+        "post",
+        "/code/download",
+        json={"task": {"id": 28, "token": "abcdef"}},
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+    )
+
+    # Does not download code
+    assert not path.exists(folder)
+
+
+def test_download_proxy(fixture_tarfile, code_resource):
+    # Mock client response
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.is_error = False
+    response_mock.headers = {
+        "x-automa-proposal-token": "ghijkl",
+        "Content-Type": "application/gzip",
+    }
     with open(fixture_tarfile, "rb") as f:
         response_mock.iter_bytes.return_value = iter([f.read()])
 
@@ -193,7 +290,7 @@ def test_download(fixture_tarfile, code_resource):
         "/code/download",
         json={"task": {"id": 28, "token": "abcdef"}},
         headers={
-            "Accept": "application/gzip",
+            "Accept": "application/json",
             "Content-Type": "application/json",
         },
     )
@@ -213,12 +310,15 @@ def test_download(fixture_tarfile, code_resource):
 
 
 @pytest.mark.asyncio
-async def test_download_async(fixture_tarfile, async_code_resource):
+async def test_download_proxy_async(fixture_tarfile, async_code_resource):
     # Mock client response
     response_mock = MagicMock()
     response_mock.status_code = 200
     response_mock.is_error = False
-    response_mock.headers = {"x-automa-proposal-token": "ghijkl"}
+    response_mock.headers = {
+        "x-automa-proposal-token": "ghijkl",
+        "Content-Type": "application/gzip",
+    }
 
     with open(fixture_tarfile, "rb") as f:
         response_byte_reader = AsyncMock()
@@ -243,7 +343,7 @@ async def test_download_async(fixture_tarfile, async_code_resource):
         "/code/download",
         json={"task": {"id": 28, "token": "abcdef"}},
         headers={
-            "Accept": "application/gzip",
+            "Accept": "application/json",
             "Content-Type": "application/json",
         },
     )
@@ -261,7 +361,7 @@ async def test_download_async(fixture_tarfile, async_code_resource):
 
 
 def test_propose_no_token(fixture_tarfile, code_resource):
-    test_download(fixture_tarfile, code_resource)
+    test_download_proxy(fixture_tarfile, code_resource)
 
     remove(proposal_token_file)
 
@@ -274,7 +374,7 @@ def test_propose_no_token(fixture_tarfile, code_resource):
 
 @pytest.mark.asyncio
 async def test_propose_async_no_token(fixture_tarfile, async_code_resource):
-    await test_download_async(fixture_tarfile, async_code_resource)
+    await test_download_proxy_async(fixture_tarfile, async_code_resource)
 
     remove(proposal_token_file)
 
@@ -286,7 +386,7 @@ async def test_propose_async_no_token(fixture_tarfile, async_code_resource):
 
 
 def test_propose_invalid_token(fixture_tarfile, code_resource):
-    test_download(fixture_tarfile, code_resource)
+    test_download_proxy(fixture_tarfile, code_resource)
 
     with open(f"{folder}/README.md", "w") as f:
         f.write("Content\n")
@@ -322,7 +422,7 @@ def test_propose_invalid_token(fixture_tarfile, code_resource):
 
 @pytest.mark.asyncio
 async def test_propose_async_invalid_token(fixture_tarfile, async_code_resource):
-    await test_download_async(fixture_tarfile, async_code_resource)
+    await test_download_proxy_async(fixture_tarfile, async_code_resource)
 
     with open(f"{folder}/README.md", "w") as f:
         f.write("Content\n")
@@ -356,8 +456,8 @@ async def test_propose_async_invalid_token(fixture_tarfile, async_code_resource)
     )
 
 
-def test_propose(fixture_tarfile, code_resource):
-    test_download(fixture_tarfile, code_resource)
+def test_propose_proxy(fixture_tarfile, code_resource):
+    test_download_proxy(fixture_tarfile, code_resource)
 
     with open(f"{folder}/README.md", "w") as f:
         f.write("Content\n")
@@ -390,8 +490,8 @@ def test_propose(fixture_tarfile, code_resource):
 
 
 @pytest.mark.asyncio
-async def test_propose_async(fixture_tarfile, async_code_resource):
-    await test_download_async(fixture_tarfile, async_code_resource)
+async def test_propose_proxy_async(fixture_tarfile, async_code_resource):
+    await test_download_proxy_async(fixture_tarfile, async_code_resource)
 
     with open(f"{folder}/README.md", "w") as f:
         f.write("Content\n")
@@ -424,7 +524,7 @@ async def test_propose_async(fixture_tarfile, async_code_resource):
 
 
 def test_propose_with_added_files(fixture_tarfile, code_resource):
-    code_folder = test_download(fixture_tarfile, code_resource)
+    code_folder = test_download_proxy(fixture_tarfile, code_resource)
 
     with open(f"{code_folder.path}/NEW.md", "w") as f:
         f.write("Content\n")
@@ -459,7 +559,7 @@ def test_propose_with_added_files(fixture_tarfile, code_resource):
 
 
 def test_propose_with_added_files_using_add_all(fixture_tarfile, code_resource):
-    code_folder = test_download(fixture_tarfile, code_resource)
+    code_folder = test_download_proxy(fixture_tarfile, code_resource)
 
     with open(f"{code_folder.path}/NEW.md", "w") as f:
         f.write("Content\n")
@@ -494,7 +594,7 @@ def test_propose_with_added_files_using_add_all(fixture_tarfile, code_resource):
 
 
 def test_propose_with_proposal_properties(fixture_tarfile, code_resource):
-    test_download(fixture_tarfile, code_resource)
+    test_download_proxy(fixture_tarfile, code_resource)
 
     with open(f"{folder}/README.md", "w") as f:
         f.write("Content\n")
@@ -534,7 +634,7 @@ def test_propose_with_proposal_properties(fixture_tarfile, code_resource):
 
 
 def test_propose_with_metadata(fixture_tarfile, code_resource):
-    test_download(fixture_tarfile, code_resource)
+    test_download_proxy(fixture_tarfile, code_resource)
 
     with open(f"{folder}/README.md", "w") as f:
         f.write("Content\n")
@@ -564,6 +664,181 @@ def test_propose_with_metadata(fixture_tarfile, code_resource):
                 "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
             },
             "metadata": {"cost": 0.1, "random": "yes"},
+        },
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+def test_download_direct(fixture_git, code_resource):
+    # Mock client response
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.is_error = False
+    response_mock.headers = {
+        "x-automa-proposal-token": "ghijkl",
+        "Content-Type": "application/json",
+    }
+    response_mock.iter_bytes.return_value = iter(
+        [f'{{"type":"direct","url":"file://{fixture_git}"}}'.encode()]
+    )
+
+    code_resource._client._client.stream.return_value.__enter__.return_value = (
+        response_mock
+    )
+
+    # Call download
+    created_folder = code_resource.download({"task": {"id": 28, "token": "abcdef"}})
+
+    # Returns path to downloaded code
+    assert created_folder.path == folder
+
+    # Hits the API
+    code_resource._client._client.stream.assert_called_once_with(
+        "post",
+        "/code/download",
+        json={"task": {"id": 28, "token": "abcdef"}},
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+    )
+
+    # Clones the repo
+    assert path.exists(folder)
+    assert sorted(listdir(folder)) == [
+        ".git",
+        "README.md",
+    ]
+
+    # Saves proposal token
+    with open(proposal_token_file, "r") as f:
+        assert f.read() == "ghijkl"
+
+    # Saves the base commit
+    with open(proposal_base_commit_file, "r") as f:
+        assert f.read() == "cc3f46ae7fdf71747b66b3e4272c0e5fe290d116"
+
+
+@pytest.mark.asyncio
+async def test_download_direct_async(fixture_git, async_code_resource):
+    # Mock client response
+    response_mock = MagicMock()
+    response_mock.status_code = 200
+    response_mock.is_error = False
+    response_mock.headers = {
+        "x-automa-proposal-token": "ghijkl",
+        "Content-Type": "application/json",
+    }
+
+    response_byte_reader = AsyncMock()
+    response_byte_reader.__aiter__.return_value = iter(
+        [f'{{"type":"direct","url":"file://{fixture_git}"}}'.encode()]
+    )
+    response_mock.aiter_bytes.return_value = response_byte_reader
+
+    async_code_resource._client._client.stream.return_value.__aenter__.return_value = (
+        response_mock
+    )
+
+    # Call download
+    created_folder = await async_code_resource.download(
+        {"task": {"id": 28, "token": "abcdef"}}
+    )
+
+    # Returns path to downloaded code
+    assert created_folder.path == folder
+
+    # Hits the API
+    async_code_resource._client._client.stream.assert_called_once_with(
+        "post",
+        "/code/download",
+        json={"task": {"id": 28, "token": "abcdef"}},
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+    )
+
+    # Clones the repo
+    assert path.exists(folder)
+    assert sorted(listdir(folder)) == [
+        ".git",
+        "README.md",
+    ]
+
+    # Saves proposal token
+    with open(proposal_token_file, "r") as f:
+        assert f.read() == "ghijkl"
+
+    # Saves the base commit
+    with open(proposal_base_commit_file, "r") as f:
+        assert f.read() == "cc3f46ae7fdf71747b66b3e4272c0e5fe290d116"
+
+
+def test_propose_direct(fixture_git, code_resource):
+    test_download_direct(fixture_git, code_resource)
+
+    with open(f"{folder}/README.md", "w") as f:
+        f.write("Content\n")
+
+    # Mock client response
+    response_mock = MagicMock()
+    response_mock.status_code = 204
+    response_mock.is_error = False
+
+    code_resource._client._client.request.return_value = response_mock
+
+    code_resource.propose({"task": {"id": 28, "token": "abcdef"}})
+
+    # Hits the API
+    code_resource._client._client.request.assert_called_once_with(
+        "post",
+        "/code/propose",
+        json={
+            "task": {"id": 28, "token": "abcdef"},
+            "proposal": {
+                "token": "ghijkl",
+                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
+                "base_commit": "cc3f46ae7fdf71747b66b3e4272c0e5fe290d116",
+            },
+        },
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+    )
+
+
+@pytest.mark.asyncio
+async def test_propose_direct_async(fixture_git, async_code_resource):
+    await test_download_direct_async(fixture_git, async_code_resource)
+
+    with open(f"{folder}/README.md", "w") as f:
+        f.write("Content\n")
+
+    # Mock client response
+    response_mock = MagicMock()
+    response_mock.status_code = 204
+    response_mock.is_error = False
+
+    async_code_resource._client._client.request = AsyncMock(return_value=response_mock)
+
+    await async_code_resource.propose({"task": {"id": 28, "token": "abcdef"}})
+
+    # Hits the API
+    async_code_resource._client._client.request.assert_called_once_with(
+        "post",
+        "/code/propose",
+        json={
+            "task": {"id": 28, "token": "abcdef"},
+            "proposal": {
+                "token": "ghijkl",
+                "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
+                "base_commit": "cc3f46ae7fdf71747b66b3e4272c0e5fe290d116",
+            },
         },
         headers={
             "Accept": "application/json",
