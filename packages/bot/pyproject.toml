@@ -3,7 +3,7 @@ name    = "automa-bot"
 version = "0.3.0"
 
 authors         = [{ name = "Sunkara, Inc.", email = "engineering@automa.app" }]
-description     = "Bot helpers for Automa"
+description     = "Bot SDK for Automa"
 license         = "MIT"
 readme          = "README.md"
 requires-python = ">=3.11"
