@@ -649,7 +649,7 @@ def test_propose_with_metadata(fixture_tarfile, code_resource):
     code_resource.propose(
         {
             "task": {"id": 28, "token": "abcdef"},
-            "metadata": {"cost": 0.1, "random": "yes"},
+            "metadata": {"cost_in_cents": 10, "random": "yes"},
         }
     )
 
@@ -663,7 +663,7 @@ def test_propose_with_metadata(fixture_tarfile, code_resource):
                 "token": "ghijkl",
                 "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
             },
-            "metadata": {"cost": 0.1, "random": "yes"},
+            "metadata": {"cost_in_cents": 10, "random": "yes"},
         },
         headers={
             "Accept": "application/json",

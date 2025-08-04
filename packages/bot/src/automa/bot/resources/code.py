@@ -327,4 +327,4 @@ class CodeProposeParams(CodeDownloadParams):
 
     # TODO: Add `extra_items=Any` (py 3.15)
     class Metadata(TypedDict):
-        cost: NotRequired[float]
+        cost_in_cents: NotRequired[int]
