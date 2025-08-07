@@ -141,7 +141,7 @@ def test_download_invalid_token(code_resource):
     # Hits the API
     code_resource._client._client.stream.assert_called_once_with(
         "post",
-        "/code/download",
+        "/bot/code/download",
         json={"task": {"id": 28, "token": "invalid"}},
         headers={
             "Accept": "application/json",
@@ -178,7 +178,7 @@ async def test_download_async_invalid_token(async_code_resource):
     # Hits the API
     async_code_resource._client._client.stream.assert_called_once_with(
         "post",
-        "/code/download",
+        "/bot/code/download",
         json={"task": {"id": 28, "token": "invalid"}},
         headers={
             "Accept": "application/json",
@@ -212,7 +212,7 @@ def test_download_missing_content_type(code_resource):
     # Hits the API
     code_resource._client._client.stream.assert_called_once_with(
         "post",
-        "/code/download",
+        "/bot/code/download",
         json={"task": {"id": 28, "token": "abcdef"}},
         headers={
             "Accept": "application/json",
@@ -250,7 +250,7 @@ async def test_download_missing_content_type_async(async_code_resource):
     # Hits the API
     async_code_resource._client._client.stream.assert_called_once_with(
         "post",
-        "/code/download",
+        "/bot/code/download",
         json={"task": {"id": 28, "token": "abcdef"}},
         headers={
             "Accept": "application/json",
@@ -287,7 +287,7 @@ def test_download_proxy(fixture_tarfile, code_resource):
     # Hits the API
     code_resource._client._client.stream.assert_called_once_with(
         "post",
-        "/code/download",
+        "/bot/code/download",
         json={"task": {"id": 28, "token": "abcdef"}},
         headers={
             "Accept": "application/json",
@@ -340,7 +340,7 @@ async def test_download_proxy_async(fixture_tarfile, async_code_resource):
     # Hits the API
     async_code_resource._client._client.stream.assert_called_once_with(
         "post",
-        "/code/download",
+        "/bot/code/download",
         json={"task": {"id": 28, "token": "abcdef"}},
         headers={
             "Accept": "application/json",
@@ -405,7 +405,7 @@ def test_propose_invalid_token(fixture_tarfile, code_resource):
     # Hits the API
     code_resource._client._client.request.assert_called_once_with(
         "post",
-        "/code/propose",
+        "/bot/code/propose",
         json={
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
@@ -441,7 +441,7 @@ async def test_propose_async_invalid_token(fixture_tarfile, async_code_resource)
     # Hits the API
     async_code_resource._client._client.request.assert_called_once_with(
         "post",
-        "/code/propose",
+        "/bot/code/propose",
         json={
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
@@ -474,7 +474,7 @@ def test_propose_proxy(fixture_tarfile, code_resource):
     # Hits the API
     code_resource._client._client.request.assert_called_once_with(
         "post",
-        "/code/propose",
+        "/bot/code/propose",
         json={
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
@@ -508,7 +508,7 @@ async def test_propose_proxy_async(fixture_tarfile, async_code_resource):
     # Hits the API
     async_code_resource._client._client.request.assert_called_once_with(
         "post",
-        "/code/propose",
+        "/bot/code/propose",
         json={
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
@@ -543,7 +543,7 @@ def test_propose_with_added_files(fixture_tarfile, code_resource):
     # Hits the API
     code_resource._client._client.request.assert_called_once_with(
         "post",
-        "/code/propose",
+        "/bot/code/propose",
         json={
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
@@ -578,7 +578,7 @@ def test_propose_with_added_files_using_add_all(fixture_tarfile, code_resource):
     # Hits the API
     code_resource._client._client.request.assert_called_once_with(
         "post",
-        "/code/propose",
+        "/bot/code/propose",
         json={
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
@@ -616,7 +616,7 @@ def test_propose_with_proposal_properties(fixture_tarfile, code_resource):
     # Hits the API
     code_resource._client._client.request.assert_called_once_with(
         "post",
-        "/code/propose",
+        "/bot/code/propose",
         json={
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
@@ -656,7 +656,7 @@ def test_propose_with_metadata(fixture_tarfile, code_resource):
     # Hits the API
     code_resource._client._client.request.assert_called_once_with(
         "post",
-        "/code/propose",
+        "/bot/code/propose",
         json={
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
@@ -698,7 +698,7 @@ def test_download_direct(fixture_git, code_resource):
     # Hits the API
     code_resource._client._client.stream.assert_called_once_with(
         "post",
-        "/code/download",
+        "/bot/code/download",
         json={"task": {"id": 28, "token": "abcdef"}},
         headers={
             "Accept": "application/json",
@@ -754,7 +754,7 @@ async def test_download_direct_async(fixture_git, async_code_resource):
     # Hits the API
     async_code_resource._client._client.stream.assert_called_once_with(
         "post",
-        "/code/download",
+        "/bot/code/download",
         json={"task": {"id": 28, "token": "abcdef"}},
         headers={
             "Accept": "application/json",
@@ -796,7 +796,7 @@ def test_propose_direct(fixture_git, code_resource):
     # Hits the API
     code_resource._client._client.request.assert_called_once_with(
         "post",
-        "/code/propose",
+        "/bot/code/propose",
         json={
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
@@ -831,7 +831,7 @@ async def test_propose_direct_async(fixture_git, async_code_resource):
     # Hits the API
     async_code_resource._client._client.request.assert_called_once_with(
         "post",
-        "/code/propose",
+        "/bot/code/propose",
         json={
             "task": {"id": 28, "token": "abcdef"},
             "proposal": {
