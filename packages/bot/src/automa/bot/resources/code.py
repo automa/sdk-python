@@ -154,7 +154,7 @@ class CodeResource(SyncAPIResource, BaseCodeResource):
 
         with self._client.stream(
             "post",
-            "/code/download",
+            "/bot/code/download",
             options={
                 **options,
                 "json": body,
@@ -202,7 +202,7 @@ class CodeResource(SyncAPIResource, BaseCodeResource):
         diff = get_diff(path)
 
         return self._client.post(
-            "/code/propose",
+            "/bot/code/propose",
             body={
                 **body,
                 "proposal": {
@@ -236,7 +236,7 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
 
         async with self._client.stream(
             "post",
-            "/code/download",
+            "/bot/code/download",
             options={
                 **options,
                 "json": body,
@@ -287,7 +287,7 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
         diff = await to_thread(get_diff, path)
 
         return await self._client.post(
-            "/code/propose",
+            "/bot/code/propose",
             body={
                 **body,
                 "proposal": {
