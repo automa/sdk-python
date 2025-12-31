@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Dict, Literal, Mapping, NotRequired, TypedDict, Union
+from typing import Any, Dict, Literal, NotRequired, TypedDict, Union
 
-from httpx._types import QueryParamTypes, RequestExtensions
+from httpx._types import HeaderTypes, QueryParamTypes, RequestExtensions
 
 
 class Omit:
@@ -27,15 +27,11 @@ class Omit:
         return False
 
 
-Headers = Mapping[str, Union[str, Omit]]
-
-
 class RequestOptions(TypedDict, total=False):
     json: Any | None
-    headers: Headers | None
+    headers: HeaderTypes | None
     params: QueryParamTypes | None
     extensions: RequestExtensions | None
-    stream: bool | None
 
 
 class ProposalTaskItem(TypedDict):

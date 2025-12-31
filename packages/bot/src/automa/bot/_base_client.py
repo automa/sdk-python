@@ -10,11 +10,13 @@ from typing import (
     Iterator,
     TypeVar,
     Union,
+    cast,
 )
 
 from httpx import URL, AsyncClient, Client, Response
+from httpx._types import HeaderTypes
 
-from ._types import Headers, RequestOptions
+from ._types import RequestOptions
 
 _T = TypeVar("_T")
 
@@ -48,7 +50,7 @@ class BaseClient(Generic[_HttpxClientT]):
         )
 
     @property
-    def default_headers(self) -> Headers:
+    def default_headers(self) -> HeaderTypes:
         return {
             "Accept": "application/json",
             "Content-Type": "application/json",
@@ -109,7 +111,7 @@ class SyncAPIClient(BaseClient[Client]):
         self,
         path: str,
         *,
-        options: RequestOptions = {},
+        options: RequestOptions = cast(RequestOptions, {}),
     ) -> Response:
         return self.method("get", path, options=options)
 
@@ -118,7 +120,7 @@ class SyncAPIClient(BaseClient[Client]):
         path: str,
         *,
         body: Any | None = None,
-        options: RequestOptions = {},
+        options: RequestOptions = cast(RequestOptions, {}),
     ) -> Response:
         return self.method(
             "post",
@@ -130,7 +132,11 @@ class SyncAPIClient(BaseClient[Client]):
         )
 
     def method(
-        self, method: str, path: str, *, options: RequestOptions = {}
+        self,
+        method: str,
+        path: str,
+        *,
+        options: RequestOptions = cast(RequestOptions, {}),
     ) -> Response:
         options["headers"] = {**self.default_headers, **options.get("headers", {})}
 
@@ -144,7 +150,11 @@ class SyncAPIClient(BaseClient[Client]):
 
     @contextmanager
     def stream(
-        self, method: str, path: str, *, options: RequestOptions = {}
+        self,
+        method: str,
+        path: str,
+        *,
+        options: RequestOptions = cast(RequestOptions, {}),
     ) -> Iterator[Response]:
         options["headers"] = {**self.default_headers, **options.get("headers", {})}
 
@@ -208,7 +218,7 @@ class AsyncAPIClient(BaseClient[AsyncClient]):
         self,
         path: str,
         *,
-        options: RequestOptions = {},
+        options: RequestOptions = cast(RequestOptions, {}),
     ) -> Response:
         return await self.method("get", path, options=options)
 
@@ -217,7 +227,7 @@ class AsyncAPIClient(BaseClient[AsyncClient]):
         path: str,
         *,
         body: Any | None = None,
-        options: RequestOptions = {},
+        options: RequestOptions = cast(RequestOptions, {}),
     ) -> Response:
         return await self.method(
             "post",
@@ -233,7 +243,7 @@ class AsyncAPIClient(BaseClient[AsyncClient]):
         method: str,
         path: str,
         *,
-        options: RequestOptions = {},
+        options: RequestOptions = cast(RequestOptions, {}),
     ) -> Response:
         options["headers"] = {**self.default_headers, **options.get("headers", {})}
 
@@ -247,7 +257,11 @@ class AsyncAPIClient(BaseClient[AsyncClient]):
 
     @asynccontextmanager
     async def stream(
-        self, method: str, path: str, *, options: RequestOptions = {}
+        self,
+        method: str,
+        path: str,
+        *,
+        options: RequestOptions = cast(RequestOptions, {}),
     ) -> AsyncIterator[Response]:
         options["headers"] = {**self.default_headers, **options.get("headers", {})}
 
