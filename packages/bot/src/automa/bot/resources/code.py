@@ -38,7 +38,7 @@ def get_diff(path: str) -> str:
 
 
 class CodeFolder:
-    def __init__(self, path: str):
+    def __init__(self, path: str | Path):
         self.path = path
 
     def add(self, paths: str | list[str]) -> None:

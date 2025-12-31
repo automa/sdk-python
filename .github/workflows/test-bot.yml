@@ -26,6 +26,9 @@ jobs:
           version: 0.7
       - name: Install dependencies
         run: uv sync --frozen
+      - name: Type check
+        run: uv run --frozen ty check
+        working-directory: packages/bot
       - name: Run tests
         run: PYTHON_ENV=test uv run --frozen pytest --cov=src --cov-report=xml
         working-directory: packages/bot
