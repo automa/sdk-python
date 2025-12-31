@@ -54,3 +54,5 @@ jobs:
           git diff --exit-code
       - name: Formatting check
         run: uv run --frozen ruff format --check
+      - name: Typing check
+        run: uv run --frozen ty check

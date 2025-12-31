@@ -2,7 +2,7 @@ from src.automa.bot.webhook import generate_webhook_signature, verify_webhook
 
 
 def test_returns_false_if_secret_is_not_a_string():
-    result = verify_webhook(1, "signature", "{}")
+    result = verify_webhook(1, "signature", "{}")  # ty:ignore[invalid-argument-type]
 
     assert result is False
 
@@ -14,7 +14,7 @@ def test_returns_false_if_secret_is_empty():
 
 
 def test_returns_false_if_signature_is_not_a_string():
-    result = verify_webhook("secret", 1, "{}")
+    result = verify_webhook("secret", 1, "{}")  # ty:ignore[invalid-argument-type]
 
     assert result is False
 

@@ -3,11 +3,11 @@ from __future__ import annotations
 import os
 
 from httpx import URL
+from httpx._types import HeaderTypes
 from typing_extensions import override
 
 from ._base_client import (
     AsyncAPIClient,
-    Headers,
     SyncAPIClient,
 )
 from .resources import code
@@ -19,7 +19,7 @@ __all__ = [
 
 
 class Automa(SyncAPIClient):
-    _default_headers: Headers
+    _default_headers: HeaderTypes
 
     code: code.CodeResource
 
@@ -27,7 +27,7 @@ class Automa(SyncAPIClient):
         self,
         *,
         base_url: str | URL | None = None,
-        default_headers: Headers | None = None,
+        default_headers: HeaderTypes | None = None,
     ) -> None:
         """Construct a new synchronous Automa client instance."""
         if base_url is None:
@@ -53,7 +53,7 @@ class Automa(SyncAPIClient):
 
 
 class AsyncAutoma(AsyncAPIClient):
-    _default_headers: Headers
+    _default_headers: HeaderTypes
 
     code: code.AsyncCodeResource
 
@@ -61,7 +61,7 @@ class AsyncAutoma(AsyncAPIClient):
         self,
         *,
         base_url: str | URL | None = None,
-        default_headers: Headers | None = None,
+        default_headers: HeaderTypes | None = None,
     ) -> None:
         """Construct a new async AsyncAutoma client instance."""
         if base_url is None:
@@ -79,7 +79,7 @@ class AsyncAutoma(AsyncAPIClient):
 
     @property
     @override
-    def default_headers(self) -> Headers:
+    def default_headers(self) -> HeaderTypes:
         return {
             **super().default_headers,
             **self._default_headers,

@@ -8,7 +8,7 @@ from os import makedirs, remove
 from os.path import join
 from pathlib import Path
 from shutil import rmtree
-from typing import NotRequired, TypedDict
+from typing import NotRequired, TypedDict, cast
 
 from .._resource import AsyncAPIResource, SyncAPIResource
 from .._types import RequestOptions
@@ -146,7 +146,10 @@ class CodeResource(SyncAPIResource, BaseCodeResource):
             pass
 
     def download(
-        self, body: CodeDownloadParams, *, options: RequestOptions = {}
+        self,
+        body: CodeDownloadParams,
+        *,
+        options: RequestOptions = cast(RequestOptions, {}),
     ) -> CodeFolder:
         token = None
         path = self._path(body["task"])
@@ -191,7 +194,12 @@ class CodeResource(SyncAPIResource, BaseCodeResource):
 
         return CodeFolder(path)
 
-    def propose(self, body: CodeProposeParams, *, options: RequestOptions = {}):
+    def propose(
+        self,
+        body: CodeProposeParams,
+        *,
+        options: RequestOptions = cast(RequestOptions, {}),
+    ):
         path = self._path(body["task"])
         token = self._read_token(path)
         base_commit = self._read_base_commit(path)
@@ -228,7 +236,10 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
             pass
 
     async def download(
-        self, body: CodeDownloadParams, *, options: RequestOptions = {}
+        self,
+        body: CodeDownloadParams,
+        *,
+        options: RequestOptions = cast(RequestOptions, {}),
     ) -> CodeFolder:
         token = None
         path = self._path(body["task"])
@@ -276,7 +287,12 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
 
         return CodeFolder(path)
 
-    async def propose(self, body: CodeProposeParams, *, options: RequestOptions = {}):
+    async def propose(
+        self,
+        body: CodeProposeParams,
+        *,
+        options: RequestOptions = cast(RequestOptions, {}),
+    ):
         path = self._path(body["task"])
         token = await to_thread(self._read_token, path)
         base_commit = await to_thread(self._read_base_commit, path)
