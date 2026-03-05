@@ -24,10 +24,15 @@ __all__ = [
 
 
 # TODO: Use programmatic git instead of git command
-def get_diff(path: str) -> str:
+def get_diff(path: str, base_commit: str | None = None) -> str:
     """Get the diff for the given git repository path."""
+    args = ["git", "diff"]
+
+    if base_commit:
+        args.append(base_commit)
+
     result = subprocess.run(
-        ["git", "diff"],
+        args,
         cwd=path,
         capture_output=True,
         text=True,
@@ -78,12 +83,12 @@ class BaseCodeResource:
 
         return token
 
-    def _read_base_commit(self, folder: str) -> str | None:
+    def _read_base_commit(self, folder: str, type: str) -> str | None:
         base_commit = None
 
         try:
             with open(
-                f"{folder}/.git/automa_proposal_base_commit", "r", encoding="utf8"
+                f"{folder}/.git/automa_{type}_base_commit", "r", encoding="utf8"
             ) as f:
                 base_commit = f.read().strip()
         except FileNotFoundError:
@@ -103,16 +108,8 @@ class BaseCodeResource:
             check=True,
         )
 
-        # Note down the base commit
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            cwd=path,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-
-        self._write_base_commit(folder, result.stdout.strip())
+        # Note down the base commit to send in proposal
+        self._write_base_commit(folder, "proposal")
 
     def _extract_download(self, folder: str) -> None:
         rmtree(folder, ignore_errors=True)
@@ -121,17 +118,27 @@ class BaseCodeResource:
         with tarfile.open(f"{folder}.tar.gz", "r:gz") as tar:
             tar.extractall(path=folder)
 
+        # Note down the base commit to be used in generating diff
+        self._write_base_commit(folder, "diff")
+
     def _write_token(self, folder: str, token: str) -> None:
         # Save the proposal token for later use
         with open(f"{folder}/.git/automa_proposal_token", "w", encoding="utf8") as f:
             f.write(token)
 
-    def _write_base_commit(self, folder: str, base_commit: str) -> None:
-        # Save the base commit for later use
+    def _write_base_commit(self, folder: str, type: str) -> None:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"],
+            cwd=folder,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
         with open(
-            f"{folder}/.git/automa_proposal_base_commit", "w", encoding="utf8"
+            f"{folder}/.git/automa_{type}_base_commit", "w", encoding="utf8"
         ) as f:
-            f.write(base_commit)
+            f.write(result.stdout.strip())
 
 
 class CodeResource(SyncAPIResource, BaseCodeResource):
@@ -202,12 +209,13 @@ class CodeResource(SyncAPIResource, BaseCodeResource):
     ):
         path = self._path(body["task"])
         token = self._read_token(path)
-        base_commit = self._read_base_commit(path)
+        base_commit = self._read_base_commit(path, "proposal")
+        diff_base_commit = self._read_base_commit(path, "diff")
 
         if not token:
             raise ValueError("Failed to read the stored proposal token")
 
-        diff = get_diff(path)
+        diff = get_diff(path, base_commit or diff_base_commit)
 
         return self._client.post(
             "/bot/code/propose",
@@ -295,12 +303,13 @@ class AsyncCodeResource(AsyncAPIResource, BaseCodeResource):
     ):
         path = self._path(body["task"])
         token = await to_thread(self._read_token, path)
-        base_commit = await to_thread(self._read_base_commit, path)
+        base_commit = await to_thread(self._read_base_commit, path, "proposal")
+        diff_base_commit = await to_thread(self._read_base_commit, path, "diff")
 
         if not token:
             raise ValueError("Failed to read the stored proposal token")
 
-        diff = await to_thread(get_diff, path)
+        diff = await to_thread(get_diff, path, base_commit or diff_base_commit)
 
         return await self._client.post(
             "/bot/code/propose",

@@ -12,6 +12,7 @@ from src.automa.bot.resources.code import AsyncCodeResource, CodeResource
 folder = "/tmp/automa/tasks/28"
 proposal_token_file = f"{folder}/.git/automa_proposal_token"
 proposal_base_commit_file = f"{folder}/.git/automa_proposal_base_commit"
+diff_base_commit_file = f"{folder}/.git/automa_diff_base_commit"
 
 
 @pytest.fixture
@@ -45,7 +46,7 @@ def async_code_resource():
 @pytest.fixture
 def fixture_git():
     tests_folder = Path(__file__).parent.parent
-    git_path = tests_folder / "fixtures" / "download_git"
+    git_path = tests_folder / "fixtures" / "download" / "_git"
 
     yield git_path
 
@@ -55,23 +56,20 @@ def fixture_tarfile():
     tests_folder = Path(__file__).parent.parent
     fixture = tests_folder / "fixtures" / "download"
     tarfile_path = tests_folder / "fixture.tar.gz"
+    git_path = fixture / ".git"
+    _git_path = fixture / "_git"
 
-    run(["git", "init"], cwd=fixture, capture_output=True)
-    run(["git", "add", "."], cwd=fixture, capture_output=True)
-    run(["git", "config", "user.name", "Tmp"], cwd=fixture, capture_output=True)
-    run(
-        ["git", "config", "user.email", "tmp@tmp.com"], cwd=fixture, capture_output=True
-    )
-    run(["git", "commit", "-m", "Initial commit"], cwd=fixture, capture_output=True)
+    _git_path.rename(git_path)
 
     with tarfile.open(tarfile_path, "w:gz") as tar:
         for subpath in listdir(fixture):
             tar.add(fixture / subpath, arcname=subpath)
 
+    git_path.rename(_git_path)
+
     yield tarfile_path
 
     remove(tarfile_path)
-    rmtree(fixture / ".git", ignore_errors=True)
 
 
 def test_cleanup_proxy(code_resource):
@@ -154,7 +152,7 @@ def test_download_invalid_token(code_resource):
 
 
 @pytest.mark.asyncio
-async def test_download_async_invalid_token(async_code_resource):
+async def test_download_invalid_token_async(async_code_resource):
     # Mock client response
     response_mock = MagicMock()
     response_mock.status_code = 403
@@ -299,12 +297,18 @@ def test_download_proxy(fixture_tarfile, code_resource):
     assert path.exists(folder)
     assert sorted(listdir(folder)) == [
         ".git",
+        "LICENSE",
         "README.md",
     ]
 
     # Saves proposal token
     with open(proposal_token_file, "r") as f:
         assert f.read() == "ghijkl"
+
+    # Saves diff base commit
+    assert not path.exists(proposal_base_commit_file)
+    with open(diff_base_commit_file, "r") as f:
+        assert f.read() == "5575f40bc4ead411b690b6f2f09636e3468ef12e"
 
     return created_folder
 
@@ -352,12 +356,18 @@ async def test_download_proxy_async(fixture_tarfile, async_code_resource):
     assert path.exists(folder)
     assert sorted(listdir(folder)) == [
         ".git",
+        "LICENSE",
         "README.md",
     ]
 
     # Saves proposal token
     with open(proposal_token_file, "r") as f:
         assert f.read() == "ghijkl"
+
+    # Saves diff base commit
+    assert not path.exists(proposal_base_commit_file)
+    with open(diff_base_commit_file, "r") as f:
+        assert f.read() == "5575f40bc4ead411b690b6f2f09636e3468ef12e"
 
 
 def test_propose_no_token(fixture_tarfile, code_resource):
@@ -373,7 +383,7 @@ def test_propose_no_token(fixture_tarfile, code_resource):
 
 
 @pytest.mark.asyncio
-async def test_propose_async_no_token(fixture_tarfile, async_code_resource):
+async def test_propose_no_token_async(fixture_tarfile, async_code_resource):
     await test_download_proxy_async(fixture_tarfile, async_code_resource)
 
     remove(proposal_token_file)
@@ -421,7 +431,7 @@ def test_propose_invalid_token(fixture_tarfile, code_resource):
 
 
 @pytest.mark.asyncio
-async def test_propose_async_invalid_token(fixture_tarfile, async_code_resource):
+async def test_propose_invalid_token_async(fixture_tarfile, async_code_resource):
     await test_download_proxy_async(fixture_tarfile, async_code_resource)
 
     with open(f"{folder}/README.md", "w") as f:
@@ -593,6 +603,58 @@ def test_propose_with_added_files_using_add_all(fixture_tarfile, code_resource):
     )
 
 
+def test_propose_with_intermediate_commits(fixture_tarfile, code_resource):
+    test_download_proxy(fixture_tarfile, code_resource)
+
+    with open(f"{folder}/LICENSE", "w") as f:
+        f.write("MIT\n")
+
+    run(["git", "add", "LICENSE"], cwd=folder, capture_output=True)
+    run(
+        [
+            "git",
+            "-c",
+            "user.name=Tmp",
+            "-c",
+            "user.email=tmp@tmp.com",
+            "commit",
+            "-m",
+            "Intermediate commit",
+        ],
+        cwd=folder,
+        capture_output=True,
+    )
+
+    with open(f"{folder}/README.md", "w") as f:
+        f.write("Content\n")
+
+    # Mock client response
+    response_mock = MagicMock()
+    response_mock.status_code = 204
+    response_mock.is_error = False
+
+    code_resource._client._client.request.return_value = response_mock
+
+    code_resource.propose({"task": {"id": 28, "token": "abcdef"}})
+
+    # Hits the API
+    code_resource._client._client.request.assert_called_once_with(
+        "post",
+        "/bot/code/propose",
+        json={
+            "task": {"id": 28, "token": "abcdef"},
+            "proposal": {
+                "token": "ghijkl",
+                "diff": "diff --git a/LICENSE b/LICENSE\nindex e69de29..a22a2da 100644\n--- a/LICENSE\n+++ b/LICENSE\n@@ -0,0 +1 @@\n+MIT\ndiff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
+            },
+        },
+        headers={
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+    )
+
+
 def test_propose_with_proposal_properties(fixture_tarfile, code_resource):
     test_download_proxy(fixture_tarfile, code_resource)
 
@@ -710,6 +772,7 @@ def test_download_direct(fixture_git, code_resource):
     assert path.exists(folder)
     assert sorted(listdir(folder)) == [
         ".git",
+        "LICENSE",
         "README.md",
     ]
 
@@ -719,7 +782,8 @@ def test_download_direct(fixture_git, code_resource):
 
     # Saves the base commit
     with open(proposal_base_commit_file, "r") as f:
-        assert f.read() == "cc3f46ae7fdf71747b66b3e4272c0e5fe290d116"
+        assert f.read() == "5575f40bc4ead411b690b6f2f09636e3468ef12e"
+    assert not path.exists(diff_base_commit_file)
 
 
 @pytest.mark.asyncio
@@ -766,6 +830,7 @@ async def test_download_direct_async(fixture_git, async_code_resource):
     assert path.exists(folder)
     assert sorted(listdir(folder)) == [
         ".git",
+        "LICENSE",
         "README.md",
     ]
 
@@ -775,7 +840,8 @@ async def test_download_direct_async(fixture_git, async_code_resource):
 
     # Saves the base commit
     with open(proposal_base_commit_file, "r") as f:
-        assert f.read() == "cc3f46ae7fdf71747b66b3e4272c0e5fe290d116"
+        assert f.read() == "5575f40bc4ead411b690b6f2f09636e3468ef12e"
+    assert not path.exists(diff_base_commit_file)
 
 
 def test_propose_direct(fixture_git, code_resource):
@@ -802,7 +868,7 @@ def test_propose_direct(fixture_git, code_resource):
             "proposal": {
                 "token": "ghijkl",
                 "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
-                "base_commit": "cc3f46ae7fdf71747b66b3e4272c0e5fe290d116",
+                "base_commit": "5575f40bc4ead411b690b6f2f09636e3468ef12e",
             },
         },
         headers={
@@ -837,7 +903,7 @@ async def test_propose_direct_async(fixture_git, async_code_resource):
             "proposal": {
                 "token": "ghijkl",
                 "diff": "diff --git a/README.md b/README.md\nindex e69de29..39c9f36 100644\n--- a/README.md\n+++ b/README.md\n@@ -0,0 +1 @@\n+Content\n",
-                "base_commit": "cc3f46ae7fdf71747b66b3e4272c0e5fe290d116",
+                "base_commit": "5575f40bc4ead411b690b6f2f09636e3468ef12e",
             },
         },
         headers={
